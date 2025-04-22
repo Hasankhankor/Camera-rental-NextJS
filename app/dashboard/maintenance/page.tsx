@@ -220,7 +220,6 @@ export default function MaintenancePage() {
           </div>
         </TabsContent>
 
-        {/* Other tab contents would follow the same pattern */}
         <TabsContent value="pending" className="space-y-4">
           <div className="grid gap-4">
             {maintenanceItems
@@ -228,7 +227,6 @@ export default function MaintenancePage() {
               .map((item) => (
                 <Card key={item.id}>
                   <CardContent className="p-6">
-                    {/* Similar content structure */}
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2">
@@ -249,4 +247,84 @@ export default function MaintenancePage() {
                       <p className="text-sm text-muted-foreground">{item.issue}</p>
                     </div>
 
-                    <div className="grid grid-cols\
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Reported</p>
+                          <p className="text-sm text-muted-foreground">{item.reportedDate}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Scheduled</p>
+                          <p className="text-sm text-muted-foreground">{item.scheduledDate}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Tool className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Notes</p>
+                          <p className="text-sm text-muted-foreground">{item.notes}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                      <Button size="sm">Start Maintenance</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="scheduled" className="space-y-4">
+          <div className="grid gap-4">
+            {maintenanceItems
+              .filter((item) => item.status === "scheduled")
+              .map((item) => (
+                <Card key={item.id}>
+                  <CardContent className="p-6">
+                    {/* Similar content structure as above */}
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="in-progress" className="space-y-4">
+          <div className="grid gap-4">
+            {maintenanceItems
+              .filter((item) => item.status === "in-progress")
+              .map((item) => (
+                <Card key={item.id}>
+                  <CardContent className="p-6">
+                    {/* Similar content structure as above */}
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="completed" className="space-y-4">
+          <div className="grid gap-4">
+            {maintenanceItems
+              .filter((item) => item.status === "completed")
+              .map((item) => (
+                <Card key={item.id}>
+                  <CardContent className="p-6">
+                    {/* Similar content structure as above */}
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
