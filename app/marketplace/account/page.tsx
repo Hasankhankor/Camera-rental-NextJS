@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -28,13 +27,37 @@ export default function AccountPage() {
   const { getBookingsByCustomerId } = useBookingStore()
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "profile")
+
+  // Redirect to login if user is not logged in
+  useEffect(() => {
+    if (!user) {
+      router.push('/login')
+      return
+    }
+  }, [user, router])
+
+  const handleLogout = () => {
+    logout()
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully.",
+    })
+    router.push("/login")
+  }
+
+  // Don't render anything while checking authentication
+  if (!user) {
+    return null
+  }
+
+  // Initialize form state after we're sure user exists
   const [profileForm, setProfileForm] = useState({
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
-    phone: user.phone,
-    location: user.location,
-    bio: user.bio,
+    phone: user.phone || "",
+    location: user.location || "",
+    bio: user.bio || "",
   })
 
   // Filter products to only show those created by the current user
@@ -58,13 +81,46 @@ export default function AccountPage() {
     }))
   }
 
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a PNG or JPEG image.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      try {
+        const reader = new FileReader()
+        reader.onloadend = async () => {
+          await updateProfile({
+            avatar: reader.result as string
+          })
+          toast({
+            title: "Profile picture updated",
+            description: "Your profile picture has been updated successfully.",
+          })
+        }
+        reader.readAsDataURL(file)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update profile picture. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate API call delay
-    setTimeout(() => {
-      updateProfile({
+    try {
+      await updateProfile({
         firstName: profileForm.firstName,
         lastName: profileForm.lastName,
         phone: profileForm.phone,
@@ -76,13 +132,15 @@ export default function AccountPage() {
         title: "Profile updated",
         description: "Your profile information has been updated successfully.",
       })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
       setIsLoading(false)
-    }, 1000)
-  }
-
-  const handleLogout = () => {
-    logout()
-    router.push("/login")
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -95,36 +153,6 @@ export default function AccountPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 w-full border-b bg-background">
-        <div className="container flex h-16 items-center justify-between py-4">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Link href="/">
-              <span className="text-primary">Capture</span>Cart
-            </Link>
-          </div>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/marketplace" className="text-sm font-medium">
-              Marketplace
-            </Link>
-            <Link href="/login" className="text-sm font-medium">
-              Rent
-            </Link>
-            <Link href="/login" className="text-sm font-medium">
-              How It Works
-            </Link>
-            <Link href="/login" className="text-sm font-medium">
-              About Us
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Link href="/marketplace/list-equipment">
-              <Button variant="outline">List Equipment</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <main className="flex-1 container py-6">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Sidebar */}
@@ -260,9 +288,23 @@ export default function AccountPage() {
                               className="object-cover"
                             />
                           </div>
-                          <Button type="button" variant="outline" size="sm">
-                            Change Picture
-                          </Button>
+                          <div>
+                            <input
+                              type="file"
+                              id="avatar"
+                              accept="image/png,image/jpeg"
+                              className="hidden"
+                              onChange={handleImageUpload}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => document.getElementById('avatar')?.click()}
+                            >
+                              Change Picture
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -438,7 +480,7 @@ export default function AccountPage() {
 
       <footer className="border-t py-6">
         <div className="container flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">© 2024 CaptureCart. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2025 CaptureCart. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/terms" className="text-sm text-muted-foreground hover:underline">
               Terms

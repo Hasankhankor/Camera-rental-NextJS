@@ -100,6 +100,14 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/settings")}>
+                  <Link href="/dashboard/settings" className="flex items-center">
+                    <Settings className="mr-3 h-5 w-5" />
+                    <span>Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/dashboard/maintenance")}>
                   <Link href="/dashboard/maintenance" className="flex items-center">
                     <Package className="mr-3 h-5 w-5" />

@@ -17,7 +17,7 @@ import { useUserStore } from "@/lib/user-store"
 export default function SignupPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { updateProfile } = useUserStore()
+  const { signup } = useUserStore()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "",
@@ -43,7 +43,7 @@ export default function SignupPage() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (formData.password !== formData.confirmPassword) {
@@ -66,22 +66,37 @@ export default function SignupPage() {
 
     setIsLoading(true)
 
-    // Update user profile with the new information
-    updateProfile({
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      joinDate: new Date().toISOString(),
-    })
-
-    // Simulate API call delay
-    setTimeout(() => {
-      toast({
-        title: "Account created",
-        description: "Welcome to CaptureCart! You can now rent and list camera equipment.",
+    try {
+      // Create new user account
+      const success = await signup({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
       })
-      router.push("/marketplace")
-    }, 1500)
+
+      if (success) {
+        toast({
+          title: "Account created",
+          description: "Welcome to CaptureCart! You can now rent and list camera equipment.",
+        })
+        router.push("/marketplace")
+      } else {
+        toast({
+          title: "Signup failed",
+          description: "This email is already registered. Please try logging in instead.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

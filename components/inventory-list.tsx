@@ -1,10 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,217 +24,150 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Edit, MoreHorizontal, Trash2 } from "lucide-react"
+import { useProductStore } from "@/lib/product-store"
+import { useToast } from "@/components/ui/use-toast"
 
-// Sample inventory data
-const inventoryData = {
-  all: [
-    {
-      id: "cam-001",
-      name: "Sony A7III",
-      category: "cameras",
-      description: "Full-frame mirrorless camera with 24.2MP sensor",
-      status: "available",
-      dailyRate: 85,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-03-15",
-    },
-    {
-      id: "lens-001",
-      name: "Sony 24-70mm f/2.8 GM",
-      category: "lenses",
-      description: "Standard zoom lens for Sony E-mount",
-      status: "rented",
-      dailyRate: 45,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-02-20",
-    },
-    {
-      id: "light-001",
-      name: "Godox SL-60W LED",
-      category: "lighting",
-      description: "60W LED continuous light with bowens mount",
-      status: "available",
-      dailyRate: 30,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "needs attention",
-      lastMaintenance: "2023-12-10",
-    },
-    {
-      id: "audio-001",
-      name: "Rode VideoMic Pro+",
-      category: "audio",
-      description: "Shotgun microphone for DSLR and mirrorless cameras",
-      status: "available",
-      dailyRate: 25,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-01-05",
-    },
-    {
-      id: "acc-001",
-      name: "Manfrotto 055XPRO3 Tripod",
-      category: "accessories",
-      description: "Professional aluminum tripod with 3-section legs",
-      status: "rented",
-      dailyRate: 20,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-02-10",
-    },
-    {
-      id: "cam-002",
-      name: "Canon EOS R5",
-      category: "cameras",
-      description: "Full-frame mirrorless camera with 45MP sensor and 8K video",
-      status: "available",
-      dailyRate: 120,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-03-01",
-    },
-  ],
-  cameras: [
-    {
-      id: "cam-001",
-      name: "Sony A7III",
-      category: "cameras",
-      description: "Full-frame mirrorless camera with 24.2MP sensor",
-      status: "available",
-      dailyRate: 85,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-03-15",
-    },
-    {
-      id: "cam-002",
-      name: "Canon EOS R5",
-      category: "cameras",
-      description: "Full-frame mirrorless camera with 45MP sensor and 8K video",
-      status: "available",
-      dailyRate: 120,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-03-01",
-    },
-  ],
-  lenses: [
-    {
-      id: "lens-001",
-      name: "Sony 24-70mm f/2.8 GM",
-      category: "lenses",
-      description: "Standard zoom lens for Sony E-mount",
-      status: "rented",
-      dailyRate: 45,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-02-20",
-    },
-  ],
-  lighting: [
-    {
-      id: "light-001",
-      name: "Godox SL-60W LED",
-      category: "lighting",
-      description: "60W LED continuous light with bowens mount",
-      status: "available",
-      dailyRate: 30,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "needs attention",
-      lastMaintenance: "2023-12-10",
-    },
-  ],
-  audio: [
-    {
-      id: "audio-001",
-      name: "Rode VideoMic Pro+",
-      category: "audio",
-      description: "Shotgun microphone for DSLR and mirrorless cameras",
-      status: "available",
-      dailyRate: 25,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-01-05",
-    },
-  ],
-  accessories: [
-    {
-      id: "acc-001",
-      name: "Manfrotto 055XPRO3 Tripod",
-      category: "accessories",
-      description: "Professional aluminum tripod with 3-section legs",
-      status: "rented",
-      dailyRate: 20,
-      image: "/placeholder.svg?height=200&width=300",
-      maintenanceStatus: "good",
-      lastMaintenance: "2024-02-10",
-    },
-  ],
+interface InventoryListProps {
+  category?: string
+  searchQuery?: string
 }
 
-export function InventoryList({ category = "all" }: { category?: string }) {
-  const [inventory, setInventory] = useState(inventoryData[category as keyof typeof inventoryData])
+export function InventoryList({ category = "all", searchQuery = "" }: InventoryListProps) {
+  const { products, init, isInitialized, deleteProduct } = useProductStore()
+  const { toast } = useToast()
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isInitialized) {
+      init()
+    }
+  }, [init, isInitialized])
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteProduct(id)
+      toast({
+        title: "Equipment deleted",
+        description: "The equipment has been removed from inventory and marketplace.",
+      })
+    } catch (error) {
+      console.error('Failed to delete equipment:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete the equipment. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Filter products by category and search query
+  const filteredProducts = products.filter(product => {
+    const matchesCategory = category === "all" || product.category === category
+    const matchesSearch = searchQuery === "" ||
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
+
+  if (filteredProducts.length === 0) {
+    return (
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-8 text-center">
+        <p className="text-sm text-muted-foreground">
+          {searchQuery
+            ? "No items match your search criteria"
+            : category === "all"
+              ? "No equipment items found"
+              : `No ${category} found`}
+        </p>
+      </div>
+    )
+  }
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {inventory.map((item) => (
-        <Card key={item.id} className="overflow-hidden">
-          <div className="relative aspect-video">
-            <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
-            <Badge variant={item.status === "available" ? "default" : "secondary"} className="absolute top-2 right-2">
-              {item.status}
-            </Badge>
-            {item.maintenanceStatus !== "good" && (
-              <Badge variant="destructive" className="absolute top-2 left-2">
-                Maintenance needed
+    <>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {filteredProducts.map((item) => (
+          <Card key={item.id} className="overflow-hidden">
+            <div className="relative aspect-video">
+              <Image
+                src={item.image || "/placeholder.svg"}
+                alt={item.name}
+                fill
+                className="object-cover"
+              />
+              <Badge
+                variant={item.status === "available" ? "default" : "secondary"}
+                className="absolute top-2 right-2"
+              >
+                {item.status}
               </Badge>
-            )}
-          </div>
-          <CardHeader className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-lg">{item.name}</CardTitle>
-                <CardDescription className="line-clamp-2 mt-1">{item.description}</CardDescription>
+            </div>
+            <CardHeader className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <CardTitle>{item.name}</CardTitle>
+                  <CardDescription>{item.category}</CardDescription>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Open menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => setDeleteItemId(item.id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="-mt-1">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Open menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">ID: {item.id}</div>
-              <div className="font-medium">${item.dailyRate}/day</div>
-            </div>
-          </CardContent>
-          <CardFooter className="p-4 pt-0 flex justify-between">
-            <Button variant="outline" size="sm">
-              View Details
-            </Button>
-            <Button size="sm" disabled={item.status !== "available"}>
-              {item.status === "available" ? "Book Now" : "Unavailable"}
-            </Button>
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <p className="text-sm text-muted-foreground">{item.description}</p>
+            </CardContent>
+            <CardFooter className="p-4">
+              <p className="text-sm font-medium">AED {item.price}/day</p>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+
+      <AlertDialog open={!!deleteItemId} onOpenChange={() => setDeleteItemId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Equipment</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this equipment from both the inventory and marketplace.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (deleteItemId) {
+                  handleDelete(deleteItemId)
+                }
+                setDeleteItemId(null)
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

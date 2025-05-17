@@ -41,24 +41,21 @@ export default function LoginPage() {
       const success = await login(formData.email, formData.password)
 
       if (success) {
-        // Check if admin
-        if (formData.email === "admin@capturecart.com") {
-          toast({
-            title: "Admin login successful",
-            description: "Welcome back, Admin!",
-          })
-          router.push("/dashboard")
-        } else {
-          toast({
-            title: "Login successful",
-            description: "Welcome back to CaptureCart!",
-          })
-          router.push("/marketplace")
-        }
+        const redirectPath = formData.email === "admin@capturecart.com"
+          ? "/dashboard"
+          : "/marketplace";
+
+        toast({
+          title: "Login successful",
+          description: formData.email === "admin@capturecart.com"
+            ? "Welcome back, Admin!"
+            : "Welcome back to CaptureCart!",
+        })
+        router.push(redirectPath)
       } else {
         toast({
           title: "Login failed",
-          description: "Invalid email or password. Try the demo credentials below.",
+          description: "Invalid email or password. You can use demo@capturecart.com/password to try the demo account.",
           variant: "destructive",
         })
       }

@@ -1,8 +1,27 @@
+"use client"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
 
 export function HeroSection() {
+  const images = [
+    "https://image12.photobiz.com/6625/34_20210107162028_5427460_large.jpg",
+    "https://cdn.fstoppers.com/styles/full/s3/media/2021/04/14/nando-prime-or-zoom.jpg",
+    "https://cdn.prod.website-files.com/5979e04f8ce136000121f712/59bc282fa353f20001c492e8_image-rental-equipment.jpg",
+    "https://www.accordequips.com/admin/assets/images/sliders/15bc431951b7d0.png"
+  ]
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length)
+    }, 3000) // Change image every 3 seconds
+
+    return () => clearInterval(timer)
+  }, [])
+
   return (
     <section className="w-full bg-background">
       <div className="px-4 sm:px-6 lg:px-8 py-12 md:py-24 lg:py-32">
@@ -33,10 +52,10 @@ export function HeroSection() {
           <div className="flex items-center justify-center w-full">
             <div className="relative h-[350px] w-full md:h-[450px] lg:h-[500px]">
               <Image
-                src="/placeholder.svg?height=500&width=500"
+                src={images[currentImageIndex]}
                 alt="Professional camera equipment"
                 fill
-                className="object-cover rounded-lg"
+                className="object-cover rounded-lg transition-opacity duration-500"
                 priority
               />
             </div>

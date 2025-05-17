@@ -27,6 +27,7 @@ export default function ListEquipmentPage() {
     description: "",
     condition: "",
     location: "",
+    imageUrl: "",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -44,9 +45,43 @@ export default function ListEquipmentPage() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a PNG or JPEG image.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // For now, we'll just use a URL input, but in production you'd upload to a storage service
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          imageUrl: reader.result as string
+        }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+
+    if (!formData.imageUrl) {
+      toast({
+        title: "Image required",
+        description: "Please upload an image or provide an image URL.",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
 
     // Validate form
     if (!formData.title || !formData.category || !formData.price || !formData.description || !formData.location) {
@@ -59,61 +94,44 @@ export default function ListEquipmentPage() {
       return
     }
 
-    // Create new product
-    const newProduct = {
-      id: `custom-${Date.now()}`,
-      name: formData.title,
-      category: formData.category,
-      price: Number.parseFloat(formData.price),
-      currency: "AED",
-      image: "/placeholder.svg?height=300&width=300",
-      status: "pending",
-      description: formData.description,
-      condition: formData.condition,
-      location: formData.location,
-      createdAt: new Date().toISOString(),
-    }
+    try {
+      // Create new product
+      const newProduct = {
+        id: `custom-${Date.now()}`,
+        name: formData.title,
+        category: formData.category,
+        price: Number.parseFloat(formData.price),
+        currency: "AED",
+        image: formData.imageUrl || "/placeholder.svg?height=300&width=300",
+        status: "pending",
+        description: formData.description,
+        condition: formData.condition,
+        location: formData.location,
+        isApproved: false,
+        createdAt: new Date().toISOString(),
+      }
 
-    // Add product to store
-    addProduct(newProduct)
+      // Add product to store and database
+      await addProduct(newProduct)
 
-    // Simulate API call delay
-    setTimeout(() => {
       toast({
         title: "Equipment listed for review",
         description: "Your equipment has been submitted for review. We'll notify you once it's approved.",
       })
       router.push("/marketplace")
-    }, 1500)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit equipment listing. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 w-full border-b bg-background">
-        <div className="container flex h-16 items-center justify-between py-4">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Link href="/marketplace">
-              <span className="text-primary">Capture</span>Cart
-            </Link>
-          </div>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/marketplace" className="text-sm font-medium">
-              Browse
-            </Link>
-            <Link href="/marketplace/categories" className="text-sm font-medium">
-              Categories
-            </Link>
-            <Link href="/marketplace/how-it-works" className="text-sm font-medium">
-              How It Works
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/marketplace/account">
-              <Button>My Account</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
 
       <main className="flex-1 container py-6">
         <div className="max-w-3xl mx-auto">
@@ -216,14 +234,46 @@ export default function ListEquipmentPage() {
                 <div className="space-y-2">
                   <Label>Equipment Photos</Label>
                   <div className="border-2 border-dashed rounded-md p-8 text-center">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">Drag and drop images here, or click to browse</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Upload at least 3 high-quality photos. Maximum 10MB each.
-                    </p>
-                    <Button type="button" variant="outline" size="sm" className="mt-4">
-                      Select Files
-                    </Button>
+                    <div className="flex flex-col items-center">
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <div className="mb-4">
+                        <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('image')?.click()}
+                      >
+                        Select Image
+                      </Button>
+                      <span className="mt-2 text-sm text-muted-foreground">or</span>
+                      <Input
+                        id="imageUrl"
+                        placeholder="Paste image URL"
+                        value={formData.imageUrl}
+                        onChange={handleChange}
+                        className="mt-2 max-w-sm"
+                      />
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Upload a PNG/JPEG image or provide an image URL
+                      </p>
+                    </div>
+                    {formData.imageUrl && (
+                      <div className="mt-4 relative w-full max-w-md mx-auto aspect-video rounded-lg overflow-hidden border">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={formData.imageUrl}
+                          alt="Equipment preview"
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -249,7 +299,7 @@ export default function ListEquipmentPage() {
 
       <footer className="border-t py-6">
         <div className="container flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">© 2024 CaptureCart. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2025 CaptureCart. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/terms" className="text-sm text-muted-foreground hover:underline">
               Terms

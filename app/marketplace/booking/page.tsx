@@ -12,7 +12,6 @@ import { ArrowLeft, Calendar, Clock, MapPin, Loader2 } from "lucide-react"
 import { useProductStore } from "@/lib/product-store"
 import { useUserStore } from "@/lib/user-store"
 import { useBookingStore } from "@/lib/booking-store"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function BookingPage() {
   const router = useRouter()
@@ -21,6 +20,13 @@ export default function BookingPage() {
   const { getProduct } = useProductStore()
   const { user } = useUserStore()
   const { addBooking } = useBookingStore()
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!user) {
+      router.push('/login')
+    }
+  }, [user, router])
 
   const [isLoading, setIsLoading] = useState(false)
   const [product, setProduct] = useState<any>(null)
@@ -45,7 +51,7 @@ export default function BookingPage() {
     setProduct(productData)
   }, [bookingDetails.productId, bookingDetails.from, bookingDetails.to, getProduct, router])
 
-  if (!product || !bookingDetails.from || !bookingDetails.to) {
+  if (!product || !bookingDetails.from || !bookingDetails.to || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -73,9 +79,18 @@ export default function BookingPage() {
   }
 
   const handleConfirmBooking = () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please log in to continue with the booking.",
+        variant: "destructive",
+      })
+      router.push('/login')
+      return
+    }
+
     setIsLoading(true)
 
-    // Create new booking
     const newBooking = {
       id: `B-${Math.floor(Math.random() * 10000)}`,
       productId: product.id,
@@ -92,7 +107,6 @@ export default function BookingPage() {
       location: product.location,
     }
 
-    // Simulate API call delay
     setTimeout(() => {
       addBooking(newBooking)
 
@@ -107,40 +121,7 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 w-full border-b bg-background">
-        <div className="container flex h-16 items-center justify-between py-4">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Link href="/">
-              <span className="text-primary">Capture</span>Cart
-            </Link>
-          </div>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/marketplace" className="text-sm font-medium">
-              Marketplace
-            </Link>
-            <Link href="/login" className="text-sm font-medium">
-              Rent
-            </Link>
-            <Link href="/login" className="text-sm font-medium">
-              How It Works
-            </Link>
-            <Link href="/login" className="text-sm font-medium">
-              About Us
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Link href="/marketplace/list-equipment">
-              <Button variant="outline">List Equipment</Button>
-            </Link>
-            <Link href="/marketplace/account">
-              <Button>My Account</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <>
       <main className="flex-1 container py-6">
         <div className="mb-6">
           <Link
@@ -300,7 +281,7 @@ export default function BookingPage() {
 
       <footer className="border-t py-6 mt-12">
         <div className="container flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">© 2024 CaptureCart. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2025 CaptureCart. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/terms" className="text-sm text-muted-foreground hover:underline">
               Terms
@@ -314,6 +295,6 @@ export default function BookingPage() {
           </div>
         </div>
       </footer>
-    </div>
+    </>
   )
 }

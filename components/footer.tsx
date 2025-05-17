@@ -9,7 +9,7 @@ export function Footer() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-2">
               <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                © 2024 CaptureCart. All rights reserved.
+                © 2025 CaptureCart. All rights reserved.
               </p>
             </div>
             <div className="flex gap-4">
