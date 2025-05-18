@@ -23,5 +23,6 @@ export default function MarketplaceLayout({
     }
   }, [isLoggedIn, router, pathname])
 
-  return <div className="flex min-h-screen flex-col">{children}</div>
+  // Remove the custom wrapper so ClientLayout (with MainHeader) is used
+  return children
 }

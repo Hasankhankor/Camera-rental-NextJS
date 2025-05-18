@@ -19,10 +19,16 @@ import { useBookingStore } from "@/lib/booking-store"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function AccountPage() {
+  const { user } = useUserStore()
+  // Don't render anything while checking authentication
+  if (!user) {
+    return null
+  }
+
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { user, updateProfile, logout } = useUserStore()
+  const { updateProfile, logout } = useUserStore()
   const { products } = useProductStore()
   const { getBookingsByCustomerId } = useBookingStore()
   const [isLoading, setIsLoading] = useState(false)
@@ -43,11 +49,6 @@ export default function AccountPage() {
       description: "You have been logged out successfully.",
     })
     router.push("/login")
-  }
-
-  // Don't render anything while checking authentication
-  if (!user) {
-    return null
   }
 
   // Initialize form state after we're sure user exists

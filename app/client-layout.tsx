@@ -49,6 +49,7 @@ export function ClientLayout({
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <SidebarProvider>
         <div className="relative w-full min-h-screen bg-background">
+          {/* Only show MainHeader if not in dashboard */}
           {!isDashboard && <MainHeader />}
           <div className="mx-auto w-full max-w-[1400px]">
             {children}
